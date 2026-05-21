@@ -1,15 +1,15 @@
-# Option Pricer
+# derivkit
 
-A Python toolkit for pricing and calibrating derivatives using analytical, Monte Carlo, and model-free methods. Supports Black-Scholes and Heston stochastic volatility models.
+A Python toolkit for pricing and calibrating derivatives using FFT, Monte Carlo, and model-free methods. Supports Black-Scholes and Heston stochastic volatility models.
 
 ---
 
 ## Features
 
-- **FFT-based pricing** via Carr-Madan method for fast European option valuation
+- **FFT-based pricing** via Carr-Madan for fast European option valuation
 - **Model calibration** using multi-start Nelder-Mead optimization
 - **Monte Carlo simulation** for European options and variance swaps
-- **Model-free variance estimation** (VIX replication / vixification)
+- **Model-free variance estimation** (VIX replication)
 - **Put-call parity** to derive missing option legs
 
 ### Supported Models
@@ -21,64 +21,95 @@ A Python toolkit for pricing and calibrating derivatives using analytical, Monte
 
 ---
 
-## Getting Started
-
-### Prerequisites
-
-- Python 3.9+
-- pip or conda
-
-### Installation
+## Installation
 
 ```bash
 git clone https://github.com/<your-username>/Option-Pricer.git
 cd Option-Pricer
-pip install -r requirements.txt
+pip install -e .
 ```
 
-### Data Format
-
-The pricer expects a CSV file with three columns:
-
-```
-Strikes, Maturities, Prices
-90, 0.25, 12.5
-100, 0.25, 5.2
-...
-```
-
-The included `Data.csv` can be used as a reference or replaced with your own market data.
+Requires Python 3.9+.
 
 ---
 
 ## Usage
 
+### Calibration
+
 ```python
 import numpy as np
 import pandas as pd
-from derivkit import HestonPricer
+from derivkit import HestonPricer, BlackScholesPricer
 
-# Load market data
 data = pd.read_csv("Data.csv")
 X = data[["Strikes", "Maturities"]].to_numpy()
 y = data["Prices"].to_numpy()
 
-pricer = HestonPricer(S0=100, r=0.05, q=0.0)
+# Heston — starting_values optional, built-in defaults used if omitted
+pricer = HestonPricer(S0=100, r=0.05, verbose=1)
+pricer.fit(X, y)
 
-# Calibrate Heston model (n_starts x n_params array of starting points)
-starting_values = np.array([[1.0, 0.3, 0.04, -0.5, 0.04]])  # (kappa, theta, eta, rho, V0)
-pricer.fit(X, y, starting_values)
-
-# Price calls and puts via FFT using calibrated parameters
-X_new = np.array([[95.0, 0.5], [100.0, 0.5], [105.0, 0.5]])
-call_prices = pricer.predict(X_new, option_type='call')
-put_prices  = pricer.predict(X_new, option_type='put')
+# Black-Scholes
+bs = BlackScholesPricer(S0=100, r=0.05)
+bs.fit(X, y)
 ```
 
-Run the full example:
+Pass your own starting grid if you want tighter control:
 
-```bash
-python examples/heston_demo.py
+```python
+starting_values = np.array([
+    [2.0, 0.3, 0.04, -0.5, 0.04],  # [kappa, theta, eta, rho, V0]
+    [3.0, 0.4, 0.06, -0.7, 0.06],
+])
+pricer.fit(X, y, starting_values)
+```
+
+### Pricing
+
+```python
+X_new = np.array([[95.0, 0.5], [100.0, 0.5], [105.0, 0.5]])  # [strike, maturity]
+
+calls = pricer.predict(X_new, option_type='call')
+puts  = pricer.predict(X_new, option_type='put')
+```
+
+### Diagnostics
+
+```python
+from derivkit import evaluate, plot_fit, plot_paths
+
+metrics = evaluate(pricer, X, y, verbose=True)
+# {'SSE': ..., 'MSE': ..., 'RMSE': ..., 'NRMSE': ...}
+
+plot_fit(pricer, X, y)          # model vs market prices per maturity
+plot_paths(pricer, T=1, steps=252)  # simulated price paths
+```
+
+### Monte Carlo with Contracts
+
+```python
+from derivkit.contracts import EuropeanCall, EuropeanPut, VarianceSwap
+
+T = 4 / 12
+paths = pricer.simulate(T=T, steps=round(T * 252), n_paths=10_000)
+
+call = EuropeanCall(strike=100, T=T, r=0.05)
+put  = EuropeanPut(strike=100, T=T, r=0.05)
+print(call.price(paths), put.price(paths))
+
+vs = VarianceSwap(T=T, r=0.05)
+print(vs.fair_strike(paths))
+```
+
+### Utilities
+
+```python
+from derivkit import put_call_parity
+
+# Derive put prices from calls (or vice versa)
+puts = put_call_parity(S0=100, r=0.05, q=0.0, T=0.5,
+                       strikes=[95, 100, 105], calls=calls)
 ```
 
 ---
@@ -87,26 +118,24 @@ python examples/heston_demo.py
 
 ```
 Option-Pricer/
-├── derivkit/          # Package: HestonPricer, BlackScholesPricer, contracts, diagnostics
-├── examples/          # Runnable demos
+├── derivkit/          # Package: pricers, contracts, diagnostics
+│   ├── models/        # HestonPricer, BlackScholesPricer
+│   ├── contracts/     # EuropeanCall, EuropeanPut, VarianceSwap
+│   ├── base.py        # BasePricer, put_call_parity
+│   └── diagnostics.py # evaluate, plot_fit, plot_paths
+├── examples/          # heston_demo.py
 ├── tests/             # Unit tests
-├── Data.csv           # Sample market data (strikes, maturities, prices)
-├── Paper.pdf          # Reference paper with theoretical background
-├── pyproject.toml     # Package metadata
-├── requirements.txt   # Python dependencies
-└── README.md
+├── Data.csv           # Sample market data
+├── Paper.pdf          # Theoretical background
+└── pyproject.toml     # Package metadata
 ```
 
 ---
 
 ## Theoretical Background
 
-The implementation is based on:
-
 - **Carr & Madan (1999)** — FFT option pricing via characteristic functions
 - **Heston (1993)** — Stochastic volatility model
 - **CBOE VIX methodology** — Model-free variance swap replication
 
-See `Paper.pdf` for a detailed derivation of the methods.
-
-
+See `Paper.pdf` for detailed derivations.

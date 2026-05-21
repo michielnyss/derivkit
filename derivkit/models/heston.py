@@ -37,7 +37,15 @@ class HestonPricer(BasePricer):
         self.fft_params = fft_params
         self.verbose = verbose
 
-    def fit(self, X, y, starting_values):
+    # [kappa, theta, eta, rho, V0] — all satisfy the Feller condition 2κη > θ²
+    _DEFAULT_STARTING_VALUES = np.array([
+        [2.0, 0.30, 0.04, -0.50, 0.04],
+        [3.0, 0.40, 0.06, -0.70, 0.06],
+        [1.5, 0.30, 0.08, -0.30, 0.04],
+        [4.0, 0.50, 0.05, -0.60, 0.05],
+    ])
+
+    def fit(self, X, y, starting_values=None):
         """
         Calibrate Heston parameters to market option prices.
 
@@ -47,8 +55,9 @@ class HestonPricer(BasePricer):
             Columns: [strike, maturity].
         y : array-like (n_samples,)
             Observed market call prices.
-        starting_values : array-like (n_starts, 5)
+        starting_values : array-like (n_starts, 5), optional
             Initial guesses for [kappa, theta, eta, rho, V0].
+            Defaults to a built-in grid covering typical equity vol regimes.
 
         Returns
         -------
@@ -56,6 +65,8 @@ class HestonPricer(BasePricer):
         """
         X = np.asarray(X, dtype=float)
         y = np.asarray(y, dtype=float)
+        if starting_values is None:
+            starting_values = self._DEFAULT_STARTING_VALUES
         starting_values = np.atleast_2d(np.asarray(starting_values, dtype=float))
 
         self.n_features_in_ = 2

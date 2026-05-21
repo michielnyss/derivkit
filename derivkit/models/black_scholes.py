@@ -37,7 +37,9 @@ class BlackScholesPricer(BasePricer):
         self.fft_params = fft_params
         self.verbose = verbose
 
-    def fit(self, X, y, starting_values):
+    _DEFAULT_STARTING_VALUES = np.array([[0.10], [0.20], [0.30], [0.40]])
+
+    def fit(self, X, y, starting_values=None):
         """
         Calibrate implied volatility to market option prices.
 
@@ -47,8 +49,8 @@ class BlackScholesPricer(BasePricer):
             Columns: [strike, maturity].
         y : array-like (n_samples,)
             Observed market call prices.
-        starting_values : array-like (n_starts, 1)
-            Initial sigma guesses.
+        starting_values : array-like (n_starts, 1), optional
+            Initial sigma guesses. Defaults to [0.10, 0.20, 0.30, 0.40].
 
         Returns
         -------
@@ -56,6 +58,8 @@ class BlackScholesPricer(BasePricer):
         """
         X = np.asarray(X, dtype=float)
         y = np.asarray(y, dtype=float)
+        if starting_values is None:
+            starting_values = self._DEFAULT_STARTING_VALUES
         starting_values = np.atleast_2d(np.asarray(starting_values, dtype=float))
 
         self.n_features_in_ = 2
