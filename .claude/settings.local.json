@@ -4,7 +4,8 @@
       "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\michi\\\\anaconda_projects\\\\Option-Pricer\" -Recurse)",
       "Bash(Select-Object FullName)",
       "Bash(ConvertTo-Csv -NoTypeInformation)",
-      "Bash(Sort-Object)"
+      "Bash(Sort-Object)",
+      "PowerShell(New-Item *)"
     ]
   }
 }

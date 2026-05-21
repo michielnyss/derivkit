@@ -54,38 +54,31 @@ The included `Data.csv` can be used as a reference or replaced with your own mar
 ## Usage
 
 ```python
+import numpy as np
 import pandas as pd
-from pricer import DerivativePricer
+from derivkit import HestonPricer
 
 # Load market data
 data = pd.read_csv("Data.csv")
+X = data[["Strikes", "Maturities"]].to_numpy()
+y = data["Prices"].to_numpy()
 
-pricer = DerivativePricer(
-    option_prices=data["Prices"],
-    strikes=data["Strikes"],
-    maturities=data["Maturities"],
-    S0=100,    # spot price
-    r=0.05,    # risk-free rate
-    q=0.0,     # dividend yield
-)
+pricer = HestonPricer(S0=100, r=0.05, q=0.0)
 
-# Calibrate Heston model
-starting_values = [0.5, 0.04, 0.3, -0.7, 0.04]
-hyper_params = {"N": 4096, "alpha": 1.5, "eta": 0.25}
-params, loss = pricer.calibrate_model("heston", starting_values, hyper_params)
+# Calibrate Heston model (n_starts x n_params array of starting points)
+starting_values = np.array([[1.0, 0.3, 0.04, -0.5, 0.04]])  # (kappa, theta, eta, rho, V0)
+pricer.fit(X, y, starting_values)
 
-# Price options via FFT
-char_func = pricer._build_char_func("heston", params)
-prices = pricer.fft_pricer(char_func, T=0.5, strikes=[95, 100, 105], N=4096, alpha=1.5, eta=0.25)
-
-# Estimate fair variance swap strike
-var_strike = pricer.vixification(T=0.5, strikes=..., call_prices=..., put_prices=...)
+# Price calls and puts via FFT using calibrated parameters
+X_new = np.array([[95.0, 0.5], [100.0, 0.5], [105.0, 0.5]])
+call_prices = pricer.predict(X_new, option_type='call')
+put_prices  = pricer.predict(X_new, option_type='put')
 ```
 
 Run the full example:
 
 ```bash
-python pricer.py
+python examples/heston_demo.py
 ```
 
 ---
@@ -94,9 +87,12 @@ python pricer.py
 
 ```
 Option-Pricer/
-├── pricer.py          # Main library (DerivativePricer class)
+├── derivkit/          # Package: HestonPricer, BlackScholesPricer, contracts, diagnostics
+├── examples/          # Runnable demos
+├── tests/             # Unit tests
 ├── Data.csv           # Sample market data (strikes, maturities, prices)
 ├── Paper.pdf          # Reference paper with theoretical background
+├── pyproject.toml     # Package metadata
 ├── requirements.txt   # Python dependencies
 └── README.md
 ```
