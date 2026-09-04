@@ -24,8 +24,8 @@ A Python toolkit for pricing and calibrating derivatives using FFT, Monte Carlo,
 ## Installation
 
 ```bash
-git clone https://github.com/<your-username>/Option-Pricer.git
-cd Option-Pricer
+git clone https://github.com/michielnyss/derivkit.git
+cd derivkit
 pip install -e .
 ```
 
@@ -117,7 +117,7 @@ puts = put_call_parity(S0=100, r=0.05, q=0.0, T=0.5,
 ## Project Structure
 
 ```
-Option-Pricer/
+derivkit/
 ├── derivkit/          # Package: pricers, contracts, diagnostics
 │   ├── models/        # HestonPricer, BlackScholesPricer
 │   ├── contracts/     # EuropeanCall, EuropeanPut, VarianceSwap
