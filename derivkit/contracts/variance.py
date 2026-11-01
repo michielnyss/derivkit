@@ -12,11 +12,13 @@ class VarianceSwap(BaseContract):
 
     Parameters
     ----------
-    T : float — time to maturity in years
-    r : float — continuously compounded risk-free rate
+    T : float
+        time to maturity in years
+    r : float = 0
+        continuously compounded risk-free rate
     """
 
-    def __init__(self, T, r):
+    def __init__(self, T: float, r: float = 0):
         self.T = T
         self.r = r
 

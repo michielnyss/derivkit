@@ -16,7 +16,7 @@ starting_values = np.array([[1.0, 0.3, 0.04, -0.5, 0.04]])
 def paths():
     pricer = HestonPricer(S0=S0, r=r)
     pricer.fit(X, prices, starting_values)
-    return pricer.simulate(T=T, steps=50, n_paths=1000)
+    return pricer.simulate(T=T, steps=50, n_paths=1000, seed=0)
 
 
 # ------------------------------------------------------------------

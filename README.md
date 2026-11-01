@@ -55,6 +55,20 @@ bs = BlackScholesPricer(S0=100, r=0.05)
 bs.fit(X, y)
 ```
 
+Already have parameters? Load them instead of calibrating:
+
+```python
+pricer = HestonPricer.from_params(S0=100, r=0.05, kappa=2.0, theta=0.3,
+                                  eta=0.04, rho=-0.5, V0=0.04)
+
+saved = fitted.get_model_params()          # {'kappa': ..., 'theta': ..., ...}
+loaded = HestonPricer.from_params(S0=100, r=0.05, **saved)
+```
+
+Each pricer is one model that calibrates (`fit`), prices European options with FFT (`predict`) and simulates paths for Monte Carlo (`simulate`). FFT and simulation use the same parameters, so their prices agree.
+
+A new model is one subclass of `BasePricer` with `param_names`, `default_starting_values`, `_char_func()` and `_simulate()`; calibration and pricing come for free.
+
 Pass your own starting grid if you want tighter control:
 
 ```python
@@ -83,16 +97,18 @@ metrics = evaluate(pricer, X, y, verbose=True)
 # {'SSE': ..., 'MSE': ..., 'RMSE': ..., 'NRMSE': ...}
 
 plot_fit(pricer, X, y)          # model vs market prices per maturity
-plot_paths(pricer, T=1, steps=252)  # simulated price paths
+plot_paths(paths, T=1)          # simulated price paths, see Monte Carlo below
 ```
 
 ### Monte Carlo with Contracts
+
+Pricers simulate paths; contracts price them. Any contract works on paths from any model, and the same `seed` gives the same paths.
 
 ```python
 from derivkit.contracts import EuropeanCall, EuropeanPut, VarianceSwap
 
 T = 4 / 12
-paths = pricer.simulate(T=T, steps=round(T * 252), n_paths=10_000)
+paths = pricer.simulate(T=T, steps=round(T * 252), n_paths=10_000, seed=42)
 
 call = EuropeanCall(strike=100, T=T, r=0.05)
 put  = EuropeanPut(strike=100, T=T, r=0.05)
@@ -119,9 +135,9 @@ puts = put_call_parity(S0=100, r=0.05, q=0.0, T=0.5,
 ```
 derivkit/
 ├── derivkit/          # Package: pricers, contracts, diagnostics
-│   ├── models/        # HestonPricer, BlackScholesPricer
-│   ├── contracts/     # EuropeanCall, EuropeanPut, VarianceSwap
-│   ├── base.py        # BasePricer, put_call_parity
+│   ├── models/        # BasePricer (fit, predict, simulate), HestonPricer, BlackScholesPricer
+│   ├── contracts/     # BaseContract, EuropeanCall, EuropeanPut, VarianceSwap
+│   ├── utils.py       # put_call_parity, NotFittedError
 │   └── diagnostics.py # evaluate, plot_fit, plot_paths
 ├── examples/          # heston_demo.py
 ├── tests/             # Unit tests

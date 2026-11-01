@@ -3,25 +3,23 @@ import numpy as np
 from .base import BaseContract
 
 
-class _EuropeanBase(BaseContract):
-    """Shared initialiser for European vanilla options."""
-
-    def __init__(self, strike, T, r):
-        self.strike = strike
-        self.T = T
-        self.r = r
-
-
-class EuropeanCall(_EuropeanBase):
+class EuropeanCall(BaseContract):
     """
     European call option: max(S_T - K, 0).
 
     Parameters
     ----------
     strike : float
-    T : float — time to maturity in years
-    r : float — continuously compounded risk-free rate
+    T : float
+        time to maturity in years
+    r : float = 0
+        continuously compounded risk-free rate
     """
+    
+    def __init__(self, strike: float, T: float, r: float = 0):
+        self.strike = strike
+        self.T = T
+        self.r = r
 
     def price(self, paths):
         """
@@ -40,16 +38,23 @@ class EuropeanCall(_EuropeanBase):
         return float(discount * np.maximum(S_T - self.strike, 0).mean())
 
 
-class EuropeanPut(_EuropeanBase):
+class EuropeanPut(BaseContract):
     """
     European put option: max(K - S_T, 0).
 
     Parameters
     ----------
     strike : float
-    T : float — time to maturity in years
-    r : float — continuously compounded risk-free rate
+    T : float
+        time to maturity in years
+    r : float = 0
+        continuously compounded risk-free rate
     """
+    
+    def __init__(self, strike: float, T: float, r: float = 0):
+        self.strike = strike
+        self.T = T
+        self.r = r
 
     def price(self, paths):
         """

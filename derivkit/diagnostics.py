@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-from .base import _check_is_fitted
+from .utils import _check_is_fitted
 
 
 def evaluate(pricer, X, y, verbose=False):

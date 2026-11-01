@@ -1,7 +1,8 @@
 import inspect
+from abc import ABC, abstractmethod
+import numpy as np
 
-
-class BaseContract:
+class BaseContract(ABC):
     """
     Base class for all derivative contracts.
 
@@ -9,8 +10,15 @@ class BaseContract:
     (e.g. fair_strike for variance swaps).
     """
 
-    def price(self, paths):
-        raise NotImplementedError
+    @abstractmethod
+    def price(self, paths: np.ndarray):
+        """Calculates the price (expected discounted payoff)
+        
+        Parameters
+        ----------
+        paths: np.ndarray
+            array of (n_paths x T) containing the spot prices
+        """
 
     def __repr__(self):
         sig = inspect.signature(self.__class__.__init__)

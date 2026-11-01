@@ -79,7 +79,7 @@ plt.show()
 from derivkit.contracts import VarianceSwap
 
 T = 4/12
-paths = pricer.simulate(T=T, steps=round(T * 252), n_paths=10_000)
+paths = pricer.simulate(T=T, steps=round(T * 252), n_paths=10_000, seed=124)
 vs = VarianceSwap(T=T, r=r)
 fair_strike_MC = vs.fair_strike(paths)
 print(f"\n{'='*40}")

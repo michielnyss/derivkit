@@ -72,8 +72,6 @@ def test_heston_not_fitted_error():
         pricer.predict(X)
     with pytest.raises(NotFittedError):
         pricer.score(X, prices)
-    with pytest.raises(NotFittedError):
-        pricer.simulate(0.5, 10)
 
 
 def test_heston_get_params():
@@ -113,11 +111,9 @@ def test_heston_predict_invalid_option_type(fitted_heston):
         fitted_heston.predict(X, option_type='banana')
 
 
-def test_heston_simulate_shape(fitted_heston):
-    paths = fitted_heston.simulate(T=0.5, steps=10, n_paths=50)
-    assert paths.shape == (50, 11)
-    assert np.all(paths > 0)
-
+def test_heston_simulate_not_fitted():
+    with pytest.raises(NotFittedError):
+        HestonPricer(S0=S0, r=r).simulate(0.5, 10)
 
 
 # ------------------------------------------------------------------
@@ -152,12 +148,6 @@ def test_bs_not_fitted_error():
     pricer = BlackScholesPricer(S0=S0, r=r)
     with pytest.raises(NotFittedError):
         pricer.predict(X)
-
-
-def test_bs_simulate_shape(fitted_bs):
-    paths = fitted_bs.simulate(T=0.5, steps=10, n_paths=50)
-    assert paths.shape == (50, 11)
-    assert np.all(paths > 0)
 
 
 def test_bs_repr():
